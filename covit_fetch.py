@@ -59,7 +59,7 @@ def process_album_folder(folder, dry_run=False):
                 return "Would launch COVIT"
             try:
                 # Check if COVIT is available at the user's config location
-                covit_path = "/Users/rd/.config/tools/covit"
+                covit_path = os.path.expanduser("~/.config/tools/covit")
                 if not os.path.exists(covit_path):
                     return "COVIT not found. Please install COVIT first."
                 
