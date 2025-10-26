@@ -2,20 +2,23 @@
 
 <div align="center">
 
-  [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](https://opensource.org/licenses/MIT)  [![Python](https://img.shields.io/badge/Python-3.6%2B-green?style=for-the-badge&logo=python)](https://www.python.org/)  [![Scripts](https://img.shields.io/badge/Scripts-14+-orange?style=for-the-badge)](https://github.com/deathrashed/hoarder-tools) [![macOS](https://img.shields.io/badge/macOS-Compatible-black?style=for-the-badge&logo=apple)](https://www.apple.com/macos/)  [![Linux](https://img.shields.io/badge/Linux-Compatible-orange?style=for-the-badge&logo=linux)](https://www.linux.org/)  [![Windows](https://img.shields.io/badge/Windows-Compatible-blue?style=for-the-badge&logo=windows)](https://www.microsoft.com/windows)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](https://opensource.org/licenses/MIT) [![Python](https://img.shields.io/badge/Python-3.6%2B-green?style=for-the-badge&logo=python)](https://www.python.org/) [![Scripts](https://img.shields.io/badge/Scripts-14+-orange?style=for-the-badge)](https://github.com/deathrashed/hoarder-tools) [![macOS](https://img.shields.io/badge/macOS-Compatible-black?style=for-the-badge&logo=apple)](https://www.apple.com/macos/)
 
-  **A comprehensive collection of Python scripts for managing a lossless music archive with professional-grade organization and automation.**
+**A comprehensive collection of Python scripts for managing a lossless music archive with professional-grade organization and automation.**
+
 </div>
 
 ## 🎯 Purpose
 
 This suite is designed for music hoarders who maintain large lossless collections with:
+
 - **FLAC files** as primary format
-- **Lossy duplicates** archived for space efficiency  
+- **Lossy duplicates** archived for space efficiency
 - **Standardized cover art** and metadata
 - **Embedded lyrics** and documentation
 
 Whether you're:
+
 - Organizing a massive music collection
 - Converting from lossy to lossless formats
 - Managing cover art and metadata
@@ -123,20 +126,23 @@ These scripts provide professional-grade automation with safety features and com
 ## 🛠️ Requirements
 
 ### Python Dependencies
+
 ```bash
 pip install mutagen rich pillow
 ```
 
 ### System Tools
+
 - **7-Zip** (`7zz` command) - For archiving duplicate files
   ```bash
   brew install 7zip  # macOS
   ```
 - **COVIT** (optional) - For high-res cover fetching
-  - Install from: https://github.com/porphyry/covit
+  - Install from: https://covers.musichoarders.xyz/
   - Place at: `~/.config/tools/covit`
 
 ### Python Version
+
 - Python 3.6+ required
 - Python 3.8+ recommended
 
@@ -213,61 +219,76 @@ pip install mutagen rich pillow
 ## 🖼️ Cover Art Management
 
 ### <a name="cover-extract"></a>`cover_extract.py`
+
 **Purpose:** Extracts embedded cover art from audio files
+
 - Reads cover art from FLAC and MP3 metadata
 - Saves as `cover.jpg` in each album folder
 - Skips files that already have cover art
 
 **Usage:**
+
 ```bash
 python cover_extract.py -d /path/to/music --dry-run
 python cover_extract.py -d /path/to/music
 ```
 
 ### <a name="cover-normalize"></a>`cover_normalize.py`
+
 **Purpose:** Normalizes cover art formats and naming
+
 - Converts PNG files to JPG (quality 90)
 - Renames various cover patterns to `cover.jpg`
 - Removes CD art files (`cdart.*`)
 - Preserves `logo.png` files
 
 **Usage:**
+
 ```bash
 python cover_normalize.py -d /path/to/music --dry-run
 python cover_normalize.py -d /path/to/music
 ```
 
 ### <a name="case-normalize"></a>`case_normalize.py`
+
 **Purpose:** Standardizes cover art filenames to lowercase
+
 - Renames `Cover.JPG` → `cover.jpg`
 - Renames `Folder.JPEG` → `cover.jpg`
 - Renames `Album Cover.jpg` → `cover.jpg`
 - Handles artist-level `folder.jpg` → `artist.jpg`
 
 **Usage:**
+
 ```bash
 python case_normalize.py --archive /path/to/music --dry-run
 python case_normalize.py --archive /path/to/music
 ```
 
 ### <a name="covit-fetch"></a>`covit_fetch.py`
+
 **Purpose:** Fetches high-resolution cover art using COVIT
+
 - Checks for existing covers under 1000x1000 pixels
 - Uses COVIT to fetch from multiple sources (Apple Music, Amazon, Bandcamp, Deezer)
 - Requires COVIT installation
 
 **Usage:**
+
 ```bash
 python covit_fetch.py -d /path/to/music --dry-run
 python covit_fetch.py --archive /path/to/music
 ```
 
 ### <a name="cover-purge"></a>`cover_purge.py`
+
 **Purpose:** Removes deprecated image formats
+
 - Deletes `.jp2` and `.jxl` files
 - Cleans up old/unsupported image formats
 
 **Usage:**
+
 ```bash
 python cover_purge.py -d /path/to/music --dry-run
 python cover_purge.py -d /path/to/music --verbose
@@ -276,19 +297,24 @@ python cover_purge.py -d /path/to/music --verbose
 ## 📁 File Organization & Cleanup
 
 ### <a name="folder-prune"></a>`folder_prune.py`
+
 **Purpose:** Removes empty folders without audio files
+
 - Recursively scans for folders containing no audio
 - Preserves folders with any audio files (FLAC, MP3, etc.)
 - Safe deletion with dry-run mode
 
 **Usage:**
+
 ```bash
 python folder_prune.py -d /path/to/music --dry-run
 python folder_prune.py -d /path/to/music --verbose
 ```
 
 ### <a name="mp3-archive"></a>`mp3_archive.py`
+
 **Purpose:** Archives MP3 duplicates of FLAC files
+
 - Finds MP3s that have matching FLAC files
 - Creates archives containing the MP3s in various formats
 - Optionally deletes original MP3s after archiving
@@ -296,6 +322,7 @@ python folder_prune.py -d /path/to/music --verbose
 - Supports comprehensive archive formats: 7z, zip, tar.gz, tar.xz, tar.bz2, xz, gzip, bzip2
 
 **Usage:**
+
 ```bash
 python mp3_archive.py -d /path/to/music --dry-run
 python mp3_archive.py -d /path/to/music --format zip --keep  # Keep originals
@@ -306,13 +333,16 @@ python mp3_archive.py -d /path/to/music --format bzip2  # Maximum compression
 ```
 
 ### <a name="lossy-archive"></a>`lossy_archive.py`
+
 **Purpose:** Archives various lossy format duplicates
+
 - Handles MP3, AAC, OGG, M4A, WAV duplicates
 - Creates archives in various formats (7z, zip, tar.gz, etc.)
 - More comprehensive than `mp3_archive.py`
 - Customizable format selection and file extensions
 
 **Usage:**
+
 ```bash
 python lossy_archive.py -d /path/to/music --dry-run
 python lossy_archive.py -d /path/to/music --ext mp3 aac ogg --format zip --keep
@@ -323,24 +353,30 @@ python lossy_archive.py -d /path/to/music --format bzip2  # High compression
 ## 🎵 Lyrics Management
 
 ### <a name="lyrics-embed"></a>`lyrics_embed.py`
+
 **Purpose:** Embeds lyrics from .lrc files into audio files
+
 - Finds matching `.lrc` files for each audio file
 - Strips timestamps from lyrics
 - Embeds into FLAC and MP3 metadata
 - Deletes `.lrc` files and empty `Lyrics` folders after embedding
 
 **Usage:**
+
 ```bash
 python lyrics_embed.py -d /path/to/music --dry-run
 python lyrics_embed.py -d /path/to/music --verbose
 ```
 
 ### <a name="lyrics-purge"></a>`lyrics_purge.py`
+
 **Purpose:** Removes all `Lyrics` folders
+
 - Cleanup script to remove leftover lyrics folders
 - Useful after running `lyrics_embed.py`
 
 **Usage:**
+
 ```bash
 python lyrics_purge.py -d /path/to/music --dry-run
 python lyrics_purge.py -d /path/to/music --verbose
@@ -349,13 +385,16 @@ python lyrics_purge.py -d /path/to/music --verbose
 ## 📝 Metadata & Documentation
 
 ### <a name="nfo-generate"></a>`nfo_generate.py`
+
 **Purpose:** Creates metadata documentation files
+
 - Generates `album.nfo` and `artist.nfo` files
 - Extracts metadata from audio files (artist, album, year, genre)
 - Documents cover art and lyrics status
 - Provides structured documentation for each album/artist
 
 **Usage:**
+
 ```bash
 python nfo_generate.py -d /path/to/music --dry-run
 python nfo_generate.py -d /path/to/music --verbose
@@ -364,13 +403,16 @@ python nfo_generate.py -d /path/to/music --verbose
 ## 🔍 Quality Control
 
 ### <a name="track-gap-checker"></a>`track_gap_checker.py`
+
 **Purpose:** Validates track numbering in album folders
+
 - Detects missing track numbers (gaps in sequence)
 - Identifies inconsistent numbering
 - Strict mode flags albums not starting at track 01
 - Warns about large jumps in track numbers
 
 **Usage:**
+
 ```bash
 python track_gap_checker.py --archive /path/to/music
 python track_gap_checker.py --archive /path/to/music --strict
@@ -506,6 +548,7 @@ python track_gap_checker.py --archive /path/to/music --strict
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
+
 - Submit additional script ideas
 - Suggest improvements to existing scripts
 - Share your experiences and customizations
