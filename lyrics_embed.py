@@ -67,10 +67,11 @@ def describe_folder(folder):
     else:
         return "", parts[-1], ""
 
-def scan_archive(root, dry_run=False, verbose=False):
+def scan_archive(root, dry_run=False, verbose=False, force=False):
     total = 0
     embedded = 0
     already_embedded = 0
+    skipped_with_lrc = 0
     lrc_deleted = 0
     folders = []
 
@@ -89,13 +90,30 @@ def scan_archive(root, dry_run=False, verbose=False):
             audio_path = os.path.join(folder, file)
             lrc_path = find_lrc(audio_path)
 
-            if has_embedded_lyrics(audio_path):
+            has_embedded = has_embedded_lyrics(audio_path)
+            if has_embedded and not force:
                 already_embedded += 1
-                if verbose:
+                if lrc_path:
+                    skipped_with_lrc += 1
+                    # Delete .lrc file since lyrics are already embedded
+                    if not dry_run:
+                        try:
+                            os.remove(lrc_path)
+                            lrc_deleted += 1
+                            if verbose:
+                                console.print(f"[green]✓ Deleted .lrc (already embedded):[/green] {file}")
+                        except Exception as e:
+                            console.print(f"[red]Could not delete {lrc_path}: {e}[/red]")
+                    elif verbose:
+                        console.print(f"[yellow]Would delete .lrc (already embedded):[/yellow] {file}")
+                elif verbose:
                     console.print(f"[cyan]– Already embedded:[/cyan] {file}")
                 continue
 
             if lrc_path:
+                if has_embedded and force:
+                    if verbose:
+                        console.print(f"[yellow]Re-embedding (force mode):[/yellow] {file}")
                 success = embed_lyrics(audio_path, lrc_path, dry_run)
                 if success:
                     embedded += 1
@@ -128,6 +146,8 @@ def scan_archive(root, dry_run=False, verbose=False):
     console.print(f"Audio files scanned: {total}")
     console.print(f"Lyrics embedded: {embedded}")
     console.print(f"Already embedded: {already_embedded}")
+    if skipped_with_lrc > 0:
+        console.print(f"Files with .lrc but already embedded: {skipped_with_lrc}")
     console.print(f".lrc files deleted: {lrc_deleted}")
     console.print(f"Dry run: {'Yes' if dry_run else 'No'}")
     if total:
@@ -138,5 +158,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--directory", required=True, help="Root directory to scan")
     parser.add_argument("--dry-run", action="store_true", help="Preview actions without modifying files")
     parser.add_argument("--verbose", action="store_true", help="Print detailed output per file")
+    parser.add_argument("--force", action="store_true", help="Re-embed lyrics even if already embedded")
     args = parser.parse_args()
-    scan_archive(args.directory, args.dry_run, args.verbose)
+    scan_archive(args.directory, args.dry_run, args.verbose, args.force)

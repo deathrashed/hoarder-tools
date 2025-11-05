@@ -80,6 +80,13 @@ These scripts provide professional-grade automation with safety features and com
     <td>🟡 Destructive</td>
   </tr>
   <tr>
+    <td><a href="#clean-empty-folders">clean_empty_folders.py</a></td>
+    <td>📁 Organization</td>
+    <td>Low</td>
+    <td>Remove empty/cover-only folders</td>
+    <td>🟡 Destructive</td>
+  </tr>
+  <tr>
     <td><a href="#mp3-archive">mp3_archive.py</a></td>
     <td>📁 Organization</td>
     <td>Medium</td>
@@ -162,6 +169,7 @@ pip install mutagen rich pillow
       <h3>📁 File Organization & Cleanup</h3>
       <ul>
         <li><b><a href="#folder-prune">folder_prune.py</a></b> - Remove empty folders that contain no audio files.</li>
+        <li><b><a href="#clean-empty-folders">clean_empty_folders.py</a></b> - Remove folders that are empty or only contain cover images.</li>
         <li><b><a href="#mp3-archive">mp3_archive.py</a></b> - Archive MP3 duplicates of FLAC files with comprehensive format support.</li>
         <li><b><a href="#lossy-archive">lossy_archive.py</a></b> - Archive various lossy format duplicates with customizable options.</li>
       </ul>
@@ -309,6 +317,28 @@ python cover_purge.py -d /path/to/music --verbose
 ```bash
 python folder_prune.py -d /path/to/music --dry-run
 python folder_prune.py -d /path/to/music --verbose
+```
+
+### <a name="clean-empty-folders"></a>`clean_empty_folders.py`
+
+**Purpose:** Removes folders that are empty or only contain cover images
+
+- Detects completely empty folders
+- Identifies folders containing only cover images (cover.jpg, folder.jpg, etc.)
+- Optionally deletes cover images before removing folders
+- Useful for cleaning up after mp3tag moves files but leaves behind cover.jpg
+
+**Usage:**
+
+```bash
+# Preview what would be deleted
+python clean_empty_folders.py -d /path/to/music --dry-run --verbose
+
+# Delete empty and cover-only folders (keeps cover images)
+python clean_empty_folders.py -d /path/to/music --verbose
+
+# Delete folders and their cover images
+python clean_empty_folders.py -d /path/to/music --delete-covers --verbose
 ```
 
 ### <a name="mp3-archive"></a>`mp3_archive.py`
@@ -467,11 +497,15 @@ python lyrics_embed.py -d /path/to/music --verbose
 python folder_prune.py -d /path/to/music --dry-run
 python folder_prune.py -d /path/to/music --verbose
 
-# 5. Remove lyrics folders
+# 5. Clean up cover-only folders (after mp3tag moves)
+python clean_empty_folders.py -d /path/to/music --dry-run --verbose
+python clean_empty_folders.py -d /path/to/music --delete-covers --verbose
+
+# 6. Remove lyrics folders
 python lyrics_purge.py -d /path/to/music --dry-run
 python lyrics_purge.py -d /path/to/music --verbose
 
-# 6. Generate updated documentation
+# 7. Generate updated documentation
 python nfo_generate.py -d /path/to/music --dry-run
 python nfo_generate.py -d /path/to/music --verbose
 ```
@@ -499,7 +533,11 @@ python lossy_archive.py -d /path/to/music --ext aac ogg m4a --format zip
 python folder_prune.py -d /path/to/music --dry-run
 python folder_prune.py -d /path/to/music --verbose
 
-# 5. Final validation
+# 5. Clean up cover-only folders
+python clean_empty_folders.py -d /path/to/music --dry-run --verbose
+python clean_empty_folders.py -d /path/to/music --delete-covers --verbose
+
+# 6. Final validation
 python track_gap_checker.py --archive /path/to/music --strict
 ```
 
