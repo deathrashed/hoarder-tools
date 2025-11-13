@@ -27,6 +27,53 @@ Whether you're:
 
 These scripts provide professional-grade automation with safety features and comprehensive format support.
 
+## 🚀 Quick Start
+
+**New!** Use the interactive menu to run scripts easily:
+
+```bash
+python menu.py
+```
+
+The menu provides an easy way to:
+- Select from frequently-used scripts
+- Configure options interactively
+- Run scripts with proper arguments
+- Preview commands before execution
+
+## 📁 Project Structure
+
+```
+hoarder-tools/
+├── menu.py                    # Interactive menu for running scripts
+├── [frequent scripts]         # Regularly-used scripts (see below)
+├── archive/                   # Infrequent/one-time scripts
+│   ├── lyrics_remove_folders.py       # One-time cleanup (after lyrics_embed)
+│   ├── cover_remove_deprecated.py     # Remove deprecated formats
+│   ├── metadata_fetch_genres_lastfm.py
+│   └── metadata_normalize_multi_artist.py
+└── band-photo-logo/          # Metal Archives scraper
+```
+
+**Frequent Scripts** (in main directory):
+- `lyrics_embed_from_lrc.py` - Embed lyrics from .lrc files into audio metadata
+- `cover_extract_embedded.py` - Extract embedded cover art from audio files
+- `cover_normalize_format.py` - Normalize cover formats (PNG to JPG, rename patterns)
+- `cover_normalize_case.py` - Standardize cover filenames to lowercase
+- `cover_fetch_highres.py` - Fetch high-resolution covers using COVIT
+- `folder_remove_empty.py` - Remove empty folders without audio files
+- `folder_remove_cover_only.py` - Remove folders that are empty or only contain covers
+- `archive_lossy_duplicates.py` - Archive lossy format duplicates (MP3, AAC, OGG, etc.)
+- `archive_mp3_duplicates.py` - Archive MP3 duplicates of FLAC files
+- `track_validate_numbering.py` - Validate track numbering and detect gaps
+- `metadata_generate_nfo.py` - Generate album.nfo and artist.nfo documentation
+
+**Archive Scripts** (infrequent/one-time use):
+- `lyrics_remove_folders.py` - Remove all Lyrics folders (one-time cleanup)
+- `cover_remove_deprecated.py` - Remove deprecated image formats (one-time)
+- `metadata_fetch_genres_lastfm.py` - Fetch genres from Last.fm API
+- `metadata_normalize_multi_artist.py` - Normalize multi-artist tags
+
 ## 📊 Script Overview
 
 <table>
@@ -449,6 +496,8 @@ python track_gap_checker.py --archive /path/to/music --strict
 ```
 
 ## 🚀 Common Workflows
+
+> **💡 Tip:** Use `python menu.py` for an interactive way to run these workflows!
 
 <details>
 <summary><b>Initial Setup Workflow</b></summary>

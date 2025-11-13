@@ -1,0 +1,20 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+Pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+lxml>=4.9.0
+# For free local BiRefNet (recommended - no API key needed):
+transformers>=4.30.0
+torch>=2.0.0
+torchvision>=0.15.0
+einops>=0.8.0
+kornia>=0.8.0
+timm>=1.0.0
+# Optional: For BiRefNet via fal-ai API (requires API key):
+fal-client>=0.9.0
+# rembg is optional - install manually if you have Python <3.14: pip install rembg
+# The script will work without it using PIL fallback for background removal
+# Note: Script uses direct Metal Archives API access (no enmet required)
+# Note: For BiRefNet via fal-ai, set FAL_KEY environment variable (get key from https://fal.ai/)
+
