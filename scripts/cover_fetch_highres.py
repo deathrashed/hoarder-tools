@@ -4,9 +4,9 @@ import argparse
 import subprocess
 from pathlib import Path
 
-# Auto-activate virtual environment
-script_dir = Path(__file__).parent.parent
-venv_python = script_dir / "hoarder_env" / "bin" / "python3"
+# Repo root for shared tools like `bin/covit` and the optional virtualenv.
+repo_root = Path(__file__).parent.parent
+venv_python = repo_root / "hoarder_env" / "bin" / "python3"
 if venv_python.exists() and sys.executable != str(venv_python):
     print("🔄 Auto-activating hoarder environment...")
     os.execv(str(venv_python), [str(venv_python)] + sys.argv)
@@ -58,9 +58,7 @@ def process_album_folder(folder, dry_run=False):
             if dry_run:
                 return "Would launch COVIT"
             try:
-                # Check if COVIT is available in the bin directory
-                script_dir = Path(__file__).parent
-                covit_path = script_dir / "bin" / "covit"
+                covit_path = repo_root / "bin" / "covit"
                 if not covit_path.exists():
                     return f"COVIT not found at {covit_path}. Please install COVIT first."
                 
