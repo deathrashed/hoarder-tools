@@ -17,11 +17,26 @@ console = Console()
 # Script directory
 SCRIPT_DIR = Path(__file__).parent
 SCRIPTS_DIR = SCRIPT_DIR / "scripts"
+DIRECTORY_PRESETS = [
+    "/Volumes/Eksternal/Audio",
+    "/Volumes/Eksternal/Audio/Electronic",
+    "/Volumes/Eksternal/Audio/Hip-Hop",
+    "/Volumes/Eksternal/Audio/Metal",
+    "/Volumes/Eksternal/Audio/Miscellaneous",
+    "/Volumes/Eksternal/Audio/Punk & Hardcore",
+    "/Volumes/Eksternal/Audio/Rock & Grunge",
+    "/Volumes/Eksternal/Music/Nicotine+",
+    "/Volumes/Eksternal/Music/Deemix",
+]
+DEFAULT_PRESET_BY_SCRIPT = {
+    "metadata_update_genres_lastfm.py": 8,
+    "metadata_update_genres_discogs.py": 8,
+}
 
 TOOLS = {
     "1": {
         "script": "lyrics_embed_from_lrc.py",
-        "label": "Embed Lyrics From LRC Files",
+        "label": "Embed LRC Files",
         "category": "Lyrics",
         "description": "Embed `.lrc` lyrics into FLAC and MP3 files",
         "arg_pattern": "-d",
@@ -29,9 +44,9 @@ TOOLS = {
     },
     "2": {
         "script": "lyrics_find_missing_embedded.py",
-        "label": "Find Missing Embedded Lyrics",
+        "label": "Find Missing Lyrics",
         "category": "Lyrics",
-        "description": "Write a path list of missing tracks and optionally open it in Lyrics Finder",
+        "description": "List missing lyrics for Lyrics Finder",
         "arg_pattern": "-d",
         "supports_dry_run": False,
     },
@@ -47,21 +62,21 @@ TOOLS = {
         "script": "cover_normalize_format.py",
         "label": "Normalize Cover File Format",
         "category": "Cover Art",
-        "description": "Convert and rename cover files to a standard format",
+        "description": "Convert and rename cover files to jpg",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "5": {
         "script": "artist_image_normalize.py",
-        "label": "Normalize Artist Folder Images",
+        "label": "Normalize Artist Images",
         "category": "Cover Art",
-        "description": "Rename `folder.jpg` to `artist.jpg` and remove duplicates",
+        "description": "Rename `folder.jpg` to `artist.jpg`",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "6": {
         "script": "cover_normalize_case.py",
-        "label": "Standardize Cover File Names",
+        "label": "Standardize Cover Names",
         "category": "Cover Art",
         "description": "Normalize cover and artist image filenames",
         "arg_pattern": "--archive",
@@ -69,37 +84,45 @@ TOOLS = {
     },
     "7": {
         "script": "cover_fetch_highres.py",
-        "label": "Download High-Resolution Cover Art",
+        "label": "Download HighRes Covers",
         "category": "Cover Art",
         "description": "Fetch replacement cover art with COVIT",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "8": {
-        "script": "folder_remove_empty.py",
-        "label": "Remove Folders Without Audio Files",
-        "category": "Cleanup",
-        "description": "Delete folders that contain no audio anywhere below them",
+        "script": "normalize_backdrops.py",
+        "label": "Normalize Backdrop File Names",
+        "category": "Cover Art",
+        "description": "Renumber backdrops into sequential series",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "9": {
-        "script": "folder_remove_cover_only.py",
-        "label": "Remove Empty and Cover-Only Folders",
+        "script": "folder_remove_empty.py",
+        "label": "Delete Folders Without Audio",
         "category": "Cleanup",
-        "description": "Delete empty folders and folders that only contain cover images",
+        "description": "Delete folders that contain no audio",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "10": {
-        "script": "track_title_split_folder_fix.py",
-        "label": "Fix Split Track Title Folders",
+        "script": "folder_remove_cover_only.py",
+        "label": "Remove Empty/Cover-Only Folders",
         "category": "Cleanup",
-        "description": "Flatten folders created from slashes in track titles",
+        "description": "Delete empty folders/only contain cover",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
     "11": {
+        "script": "track_title_split_folder_fix.py",
+        "label": "Fix Split Track Title Folders",
+        "category": "Cleanup",
+        "description": "Fix folders with slashes in track titles",
+        "arg_pattern": "-d",
+        "supports_dry_run": True,
+    },
+    "12": {
         "script": "archive_lossy_duplicates.py",
         "label": "Archive Lossy Duplicates",
         "category": "Archive",
@@ -107,7 +130,7 @@ TOOLS = {
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
-    "12": {
+    "13": {
         "script": "archive_mp3_duplicates.py",
         "label": "Archive MP3 Duplicates",
         "category": "Archive",
@@ -115,29 +138,53 @@ TOOLS = {
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
-    "13": {
+    "14": {
         "script": "track_validate_numbering.py",
         "label": "Check Track Numbering",
-        "category": "Quality Control",
+        "category": "Quality",
         "description": "Audit filename track-number sequences and gaps",
         "arg_pattern": "--archive",
         "supports_dry_run": True,
     },
-    "14": {
+    "15": {
         "script": "metadata_generate_nfo.py",
-        "label": "Generate Album and Artist Info Files",
+        "label": "Generate Album/Artist Info Files",
         "category": "Metadata",
         "description": "Create stub `album.nfo` and `artist.nfo` files",
         "arg_pattern": "-d",
         "supports_dry_run": True,
     },
-    "15": {
+    "16": {
+        "script": "metadata_update_genres_lastfm.py",
+        "label": "Update Genres From Last.fm",
+        "category": "Metadata",
+        "description": "Update MP3 genre tags from Last.fm tags",
+        "arg_pattern": "-d",
+        "supports_dry_run": True,
+    },
+    "17": {
+        "script": "metadata_update_genres_discogs.py",
+        "label": "Update Genres From Discogs",
+        "category": "Metadata",
+        "description": "Update MP3 genre/year tags from Discogs",
+        "arg_pattern": "-d",
+        "supports_dry_run": True,
+    },
+    "18": {
         "script": "metal_archives_scraper.py",
-        "label": "Download Band Logos and Photos",
-        "category": "Artist Assets",
-        "description": "Fetch `logo.png` and `artist.jpg` from Metal Archives",
+        "label": "Download Band Logos/Photos",
+        "category": "Assets",
+        "description": "Fetch `logo.png` and `artist.jpg` from Metallum",
         "arg_pattern": "path",
         "supports_dry_run": False,
+    },
+    "19": {
+        "script": "acquisition_discography_gaps.py",
+        "label": "Find Missing Releases",
+        "category": "Acquisition",
+        "description": "Compare Deezer discography results against your collection and optionally download gaps",
+        "arg_pattern": "-d",
+        "supports_dry_run": True,
     },
 }
 
@@ -163,22 +210,58 @@ def show_menu():
     console.print(table)
     console.print()
 
-def get_music_directory():
-    """Prompt user for music directory."""
-    console.print("\n[bold cyan]Enter your music library directory:[/bold cyan]")
-    directory = Prompt.ask("Directory path", default="")
-    
-    if not directory:
-        console.print("[red]Error: Directory is required[/red]")
+def show_directory_presets(default_index):
+    table = Table(title="Directory Presets", show_header=True, header_style="bold cyan")
+    table.add_column("ID", style="cyan", width=4)
+    table.add_column("Path", style="green")
+    for index, path in enumerate(DIRECTORY_PRESETS, 1):
+        label = f"{path} [dim](default)[/dim]" if index == default_index else path
+        table.add_row(str(index), label)
+    table.add_row("c", "[white]Custom absolute path[/white]")
+    console.print()
+    console.print(table)
+    console.print()
+
+
+def resolve_directory_selection(base_path, relative_suffix=""):
+    directory = os.path.expanduser(base_path.strip())
+    if relative_suffix.strip():
+        directory = os.path.join(directory, relative_suffix.strip())
+    return os.path.normpath(directory)
+
+
+def get_default_preset_index(script_info):
+    return DEFAULT_PRESET_BY_SCRIPT.get(script_info["script"], 1)
+
+
+def get_music_directory(script_info):
+    """Prompt user for music directory using presets plus an optional relative suffix."""
+    default_index = get_default_preset_index(script_info)
+    console.print("\n[bold cyan]Choose a base directory:[/bold cyan]")
+    show_directory_presets(default_index)
+    selection = Prompt.ask(
+        "Base path",
+        default=str(default_index),
+    ).strip().lower()
+
+    if selection == "c":
+        base_path = Prompt.ask("Custom absolute path", default="")
+        if not base_path:
+            console.print("[red]Error: Directory is required[/red]")
+            return None
+    elif selection.isdigit() and 1 <= int(selection) <= len(DIRECTORY_PRESETS):
+        base_path = DIRECTORY_PRESETS[int(selection) - 1]
+    else:
+        console.print(f"[red]Error: Invalid base path selection: {selection}[/red]")
         return None
-    
-    # Expand user home directory
-    directory = os.path.expanduser(directory)
-    
+
+    relative_suffix = Prompt.ask("Relative subpath (optional)", default="").strip()
+    directory = resolve_directory_selection(base_path, relative_suffix)
+
     if not os.path.isdir(directory):
         console.print(f"[red]Error: Directory does not exist: {directory}[/red]")
         return None
-    
+
     return directory
 
 def build_command(script_info, directory, dry_run=True, extra_args=None):
@@ -252,14 +335,17 @@ def run_script(script_key):
     console.print(f"[dim]{script_info['description']}[/dim]\n")
     
     # Get music directory
-    directory = get_music_directory()
+    directory = get_music_directory(script_info)
     if not directory:
         return
     
     # Ask for dry-run
     dry_run = False
     if script_info.get("supports_dry_run", True):
-        dry_run = Confirm.ask("Run in dry-run mode?", default=True)
+        if script_name == "acquisition_discography_gaps.py":
+            dry_run = False
+        else:
+            dry_run = Confirm.ask("Run in dry-run mode?", default=True)
     
     # Build extra arguments based on script
     extra_args = []
@@ -284,13 +370,25 @@ def run_script(script_key):
         if verbose:
             extra_args.append("--verbose")
 
+    if script_name == "cover_fetch_highres.py":
+        wait_between_albums = Confirm.ask(
+            "Wait for confirmation between albums?",
+            default=True,
+        )
+        if not wait_between_albums:
+            extra_args.append("--no-wait")
+
     if script_name in {
         "lyrics_find_missing_embedded.py",
         "artist_image_normalize.py",
+        "normalize_backdrops.py",
         "folder_remove_empty.py",
         "folder_remove_cover_only.py",
         "track_title_split_folder_fix.py",
         "metadata_generate_nfo.py",
+        "metadata_update_genres_lastfm.py",
+        "metadata_update_genres_discogs.py",
+        "acquisition_discography_gaps.py",
     }:
         verbose = Confirm.ask("Verbose output?", default=True)
         if verbose:
@@ -326,6 +424,26 @@ def run_script(script_key):
         force = Confirm.ask("Force re-download even if images already exist?", default=False)
         if force:
             extra_args.append("--force")
+
+    if script_name == "acquisition_discography_gaps.py":
+        band = Prompt.ask("Band or artist name")
+        album = Prompt.ask("Known album for artist matching")
+        extra_args.extend(["--band", band, "--album", album])
+        include_singles = Confirm.ask("Include singles in the discography scan?", default=False)
+        if include_singles:
+            extra_args.append("--include-singles")
+        output_path = Prompt.ask(
+            "Output missing-release URL list",
+            default="missing_discography_urls.txt",
+        )
+        if output_path:
+            extra_args.extend(["--output", output_path])
+        download_missing = Confirm.ask(
+            "After the scan, choose specific missing releases to download with deemon?",
+            default=False,
+        )
+        if download_missing:
+            extra_args.append("--download-with-deemon")
     
     # Build and show command
     cmd = build_command(script_info, directory, dry_run, extra_args)

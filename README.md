@@ -13,8 +13,23 @@ python3 menu.py
 The menu lets you:
 - choose a tool by name
 - answer option prompts interactively
+- choose from numbered base-path presets
+- append a relative subpath instead of typing full absolute paths
 - run in `--dry-run` first
 - rerun the same command for real immediately after a successful dry run
+
+Current base-path presets include:
+- `/Volumes/Eksternal/Audio`
+- `/Volumes/Eksternal/Audio/Electronic`
+- `/Volumes/Eksternal/Audio/Hip-Hop`
+- `/Volumes/Eksternal/Audio/Metal`
+- `/Volumes/Eksternal/Audio/Miscellaneous`
+- `/Volumes/Eksternal/Audio/Punk & Hardcore`
+- `/Volumes/Eksternal/Audio/Rock & Grunge`
+- `/Volumes/Eksternal/Music/Nicotine+`
+- `/Volumes/Eksternal/Music/Deemix`
+
+Genre update tools default to the `Deemix` preset. Most library maintenance tools default to `/Volumes/Eksternal/Audio`.
 
 ## Project Layout
 
@@ -28,6 +43,7 @@ hoarder-tools/
 │   ├── cover_normalize_format.py
 │   ├── cover_normalize_case.py
 │   ├── cover_fetch_highres.py
+│   ├── normalize_backdrops.py
 │   ├── artist_image_normalize.py
 │   ├── folder_remove_empty.py
 │   ├── folder_remove_cover_only.py
@@ -36,6 +52,9 @@ hoarder-tools/
 │   ├── archive_mp3_duplicates.py
 │   ├── track_validate_numbering.py
 │   ├── metadata_generate_nfo.py
+│   ├── metadata_update_genres_lastfm.py
+│   ├── metadata_update_genres_discogs.py
+│   ├── acquisition_discography_gaps.py
 │   └── metal_archives_scraper.py
 ├── archive/
 │   ├── lyrics_remove_folders.py
@@ -95,8 +114,18 @@ python3 scripts/lyrics_find_missing_embedded.py -d "/path/to/music" -o missing_e
 - `Normalize Cover File Format`
 - `Standardize Cover File Names`
 - `Normalize Artist Folder Images`
+- `Normalize Backdrop File Names`
 - `Download High-Resolution Cover Art`
 - `Download Band Logos and Photos`
+
+`Download High-Resolution Cover Art` opens Covers through COVIT as a manual workflow:
+- defaults to `TIDAL`, `Bandcamp`, `iTunes`, `Amazon Music`, `Apple Music`, `Last.fm`, `Soulseek`, `SoundCloud`, and `Discogs`
+- defaults to the `US` region
+- does not set a minimum pixel query, so all sizes remain visible
+- launches COVIT with a Firefox browser hint on macOS
+- if your system default browser is something else, the tool also opens the live remote COVIT URL in Firefox so you can pick and save there
+- waits for confirmation between albums by default so you can finish picking before the next search opens
+- if COVIT exits unexpectedly, it falls back to opening the same Covers search in your browser for manual selection
 
 Direct commands:
 
@@ -105,7 +134,10 @@ python3 scripts/cover_extract_embedded.py -d "/path/to/music" --dry-run
 python3 scripts/cover_normalize_format.py -d "/path/to/music" --dry-run
 python3 scripts/cover_normalize_case.py --archive "/path/to/music" --dry-run
 python3 scripts/artist_image_normalize.py -d "/path/to/music" --dry-run
+python3 scripts/normalize_backdrops.py -d "/path/to/music" --dry-run
 python3 scripts/cover_fetch_highres.py -d "/path/to/music" --dry-run
+python3 scripts/cover_fetch_highres.py -d "/path/to/music"
+python3 scripts/cover_fetch_highres.py -d "/path/to/music" --no-wait
 python3 scripts/metal_archives_scraper.py --path "/path/to/music" --all
 ```
 
@@ -147,13 +179,22 @@ python3 scripts/archive_mp3_duplicates.py -d "/path/to/music" --dry-run --format
 
 - `Check Track Numbering`
 - `Generate Album and Artist Info Files`
+- `Update Genres From Last.fm`
+- `Update Genres From Discogs`
 
 Direct commands:
 
 ```bash
 python3 scripts/track_validate_numbering.py --archive "/path/to/music" --strict
 python3 scripts/metadata_generate_nfo.py -d "/path/to/music" --dry-run --verbose
+python3 scripts/metadata_update_genres_lastfm.py -d "/path/to/music" --dry-run --verbose
+python3 scripts/metadata_update_genres_discogs.py -d "/path/to/music" --dry-run --verbose
 ```
+
+The genre update wrappers call your external Riley scripts on real runs and use a toolkit-native dry run to preview:
+- affected MP3 files
+- artists or artist/album pairs that would be queried
+- files missing required tags
 
 ## Lyrics Finder Workflow
 
@@ -179,6 +220,45 @@ python3 scripts/lyrics_send_to_lyrics_finder.py --path-list missing_embedded_lyr
 ```
 
 That helper is intentionally no longer a primary menu item.
+
+## Acquisition
+
+- `Find Missing Discography Releases`
+  - resolves an artist discography from Deezer using `band + known album`
+  - compares those releases against your local collection using Riley's collection matcher
+  - writes missing Deezer album URLs to a text file
+  - can optionally prompt for specific missing releases to send to `deemon`
+  - always scans first, then shows the missing list before any download choice is made
+
+Direct command:
+
+```bash
+python3 scripts/acquisition_discography_gaps.py \
+  -d "/Volumes/Eksternal/Audio" \
+  --band "Radiohead" \
+  --album "OK Computer" \
+  --dry-run \
+  --verbose \
+  --output missing_discography_urls.txt
+```
+
+Real run with direct deemon handoff:
+
+```bash
+python3 scripts/acquisition_discography_gaps.py \
+  -d "/Volumes/Eksternal/Audio" \
+  --band "Radiohead" \
+  --album "OK Computer" \
+  --output missing_discography_urls.txt \
+  --download-with-deemon
+```
+
+Notes:
+- gap detection uses Riley's external collection matcher from `DeemixKit`
+- direct downloading requires `deemon` to be installed and available in `PATH`
+- the menu exposes this under the `Acquisition` category
+- release selection accepts spaces, commas, or ranges such as `1 5 9` or `1-3,7`
+- on download-enabled runs, pressing Enter at the selection prompt skips downloading instead of queueing everything
 
 ## Legacy / One-Off Scripts
 
