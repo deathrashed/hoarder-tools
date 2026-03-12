@@ -10,6 +10,8 @@ Run the interactive menu:
 python3 menu.py
 ```
 
+Or double-click [launch.command](/Users/rd/.config/tools/hoarder-tools/launch.command) in Finder. It resolves the toolkit directory automatically, prefers Ghostty when available, and otherwise runs in the current terminal session.
+
 The menu lets you:
 - choose a tool by name
 - answer option prompts interactively
@@ -275,3 +277,8 @@ These stay outside the main menu and are meant to be run directly when needed:
 - The menu is the recommended entrypoint for normal use.
 - For destructive tools, use `--dry-run` first.
 - The menu can now offer an immediate real rerun after a successful dry run, so you do not need to go back through the menu.
+- The core toolkit is location-relative, so `menu.py` and `launch.command` can run from a moved copy of the repo.
+- Some wrappers still depend on external fixed paths outside this repo:
+  - `scripts/acquisition_discography_gaps.py`
+  - `scripts/metadata_update_genres_lastfm.py`
+  - `scripts/metadata_update_genres_discogs.py`

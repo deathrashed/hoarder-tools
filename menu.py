@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
@@ -195,19 +196,66 @@ LEGACY_TOOLS = [
     ("Normalize Featured Artist Tags", "archive/metadata_normalize_multi_artist.py"),
 ]
 
+LAUNCHERS = {
+    "d": {
+        "label": "Deemon",
+        "menu_label": "Deemon",
+        "path": "/Users/rd/.local/bin/deemon",
+    },
+    "s": {
+        "label": "Scrobbler",
+        "menu_label": "Scrobbler",
+        "path": "/Users/rd/Scripts/Riley/Scrobbler/src/interactive_scrobble.py",
+    },
+    "b": {
+        "label": "Bandcamp Toolkit",
+        "menu_label": "Bandcamp",
+        "path": "/Volumes/Eksternal/Music/Tools/audio-tools/Fetchers/Bandcamp/menu.sh",
+    },
+    "p": {
+        "label": "Spotify Toolkit",
+        "menu_label": "Spotify",
+        "path": "/Volumes/Eksternal/Music/Tools/audio-tools/spotify-kit/LAUNCH.command",
+    },
+    "m": {
+        "label": "Metallum Toolkit",
+        "menu_label": "Metallum",
+        "path": "/Volumes/Eksternal/Music/Tools/audio-tools/Fetchers/Metallum/LAUNCH.command",
+    },
+}
+
 def show_menu():
     """Display the main menu."""
     table = Table(title="Music Library Management Tools", show_header=True, header_style="bold magenta")
-    table.add_column("ID", style="cyan", width=4)
+    table.add_column("ID", style="cyan", width=7)
     table.add_column("Tool", style="green", width=36)
     table.add_column("Category", style="magenta", width=18)
     table.add_column("Description", style="white", width=46)
     
     for key, tool in sorted(TOOLS.items(), key=lambda x: int(x[0])):
         table.add_row(key, tool["label"], tool["category"], tool["description"])
-    
+
     console.print()
     console.print(table)
+    console.print()
+
+    launcher_table = Table(
+        show_header=False,
+        box=box.HEAVY,
+        expand=True,
+        padding=(0, 1),
+    )
+    for _ in LAUNCHERS:
+        launcher_table.add_column(justify="center")
+
+    launcher_table.add_row(
+        *[
+            f"[bold cyan]{key}[/bold cyan]\n[bold green]{launcher['menu_label']}[/bold green]"
+            for key, launcher in LAUNCHERS.items()
+        ]
+    )
+
+    console.print(launcher_table)
     console.print()
 
 def show_directory_presets(default_index):
@@ -321,6 +369,36 @@ def maybe_run_for_real_after_dry_run(cmd, label, should_prompt=False):
 
     real_cmd = [part for part in cmd if part != "--dry-run"]
     return execute_command(real_cmd, f"{label} (real run)")
+
+
+def build_launcher_command(launcher_info):
+    """Build the command to launch an external tool."""
+    launcher_path = launcher_info["path"]
+
+    if launcher_path.endswith(".py"):
+        return [sys.executable, launcher_path]
+
+    if launcher_path.endswith(".command"):
+        return ["/usr/bin/open", launcher_path]
+
+    return [launcher_path]
+
+
+def run_launcher(selection):
+    """Run an external launcher from the secondary menu."""
+    if selection not in LAUNCHERS:
+        console.print(f"[red]Invalid launcher selection: {selection}[/red]")
+        return 1
+
+    launcher_info = LAUNCHERS[selection]
+    launcher_path = launcher_info["path"]
+
+    if not os.path.exists(launcher_path):
+        console.print(f"[red]Launcher not found: {launcher_path}[/red]")
+        return 1
+
+    cmd = build_launcher_command(launcher_info)
+    return execute_command(cmd, launcher_info["label"])
 
 def run_script(script_key):
     """Run a selected script."""
@@ -472,7 +550,7 @@ def main():
     while True:
         show_menu()
         
-        console.print("[dim]Enter a tool number, 'q' to quit, or 'l' to view legacy tools[/dim]")
+        console.print("[dim]Enter a tool number, launcher key, 'q' to quit, or 'l' to view legacy tools[/dim]")
         choice = Prompt.ask("\nSelection", default="q").strip().lower()
         
         if choice == "q":
@@ -486,6 +564,10 @@ def main():
         elif choice in TOOLS:
             run_script(choice)
             if not Confirm.ask("\nRun another script?", default=True):
+                break
+        elif choice in LAUNCHERS:
+            run_launcher(choice)
+            if not Confirm.ask("\nLaunch another tool?", default=True):
                 break
         else:
             console.print(f"[red]Invalid selection: {choice}[/red]\n")

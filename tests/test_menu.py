@@ -48,6 +48,53 @@ class MenuTests(unittest.TestCase):
 
         self.assertEqual(menu.get_default_preset_index(script_info), 8)
 
+    def test_show_menu_keeps_two_digit_ids_visible_in_narrow_terminal(self):
+        import menu
+
+        original_width = menu.console.width
+        try:
+            menu.console.width = 100
+            with menu.console.capture() as capture:
+                menu.show_menu()
+        finally:
+            menu.console.width = original_width
+
+        output = capture.get()
+
+        self.assertIn("│ 10 ", output)
+        self.assertIn("│ 19 ", output)
+
+    def test_show_menu_includes_compact_bottom_launcher_bar_without_paths(self):
+        import menu
+
+        with menu.console.capture() as capture:
+            menu.show_menu()
+
+        output = capture.get()
+
+        self.assertIn("Deemon", output)
+        self.assertIn("Scrobbler", output)
+        self.assertIn("Bandcamp", output)
+        self.assertIn("Spotify", output)
+        self.assertIn("Metallum", output)
+        self.assertNotIn("Bandcamp Toolkit", output)
+        self.assertNotIn("Spotify Toolkit", output)
+        self.assertNotIn("Metallum Toolkit", output)
+        self.assertNotIn("/Users/rd/.local/bin/deemon", output)
+        self.assertNotIn("/Volumes/Eksternal/Music/Tools/audio-tools/spotify-kit/LAUNCH.command", output)
+
+    def test_run_launcher_executes_expected_command(self):
+        import menu
+
+        with patch.object(menu, "execute_command", return_value=0) as mocked_execute:
+            result = menu.run_launcher("d")
+
+        self.assertEqual(result, 0)
+        mocked_execute.assert_called_once_with(
+            ["/Users/rd/.local/bin/deemon"],
+            "Deemon",
+        )
+
     def test_maybe_run_for_real_after_dry_run_reruns_without_dry_run(self):
         import menu
 
