@@ -48,3 +48,6 @@ Thumbs.db
 # Project specific
 *.log
 missing_tracks.txt
+
+# macOS custom folder icon file
+Icon?
