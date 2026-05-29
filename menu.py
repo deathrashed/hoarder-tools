@@ -1,6 +1,12 @@
-#!/usr/bin/env python3
 """
 Interactive menu for running music library management tools.
+
+Config: ~/.config/tools/config.toml
+    [audio]
+    library = "/Volumes/Eksternal/Audio"
+    [destinations]
+    Metal = "/Volumes/Eksternal/Audio/Metal"
+    ...
 """
 
 import os
@@ -12,6 +18,15 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
+
+# TOML support: Python 3.11+ has tomllib builtin, older versions need tomli
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
 
 console = Console()
 
@@ -29,6 +44,69 @@ DIRECTORY_PRESETS = [
     "/Volumes/Eksternal/Music/Nicotine+",
     "/Volumes/Eksternal/Music/Deemix",
 ]
+DEFAULT_PRESET_BY_SCRIPT = {
+    "metadata_update_genres_lastfm.py": 8,
+    "metadata_update_genres_discogs.py": 8,
+}
+
+CONFIG_PATH = Path.home() / ".config" / "tools" / "config.toml"
+
+
+def load_config():
+    """Load config from ~/.config/tools/config.toml"""
+    config = {}
+
+    if tomllib is None:
+        return config
+
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH, "rb") as f:
+                return tomllib.load(f)
+        except Exception:
+            pass
+
+    return config
+
+
+def get_directory_presets():
+    """Get directory presets from config."""
+    config = load_config()
+
+    # Get audio library base
+    audio_library = config.get("audio", {}).get(
+        "library", config.get("audio_library", "/Volumes/Eksternal/Audio")
+    )
+
+    # Get genre destinations from config or use defaults
+    destinations = config.get("destinations", {})
+
+    # Build presets
+    presets = [audio_library]  # Base
+
+    # Add genre folders
+    for genre in [
+        "Metal",
+        "Punk & Hardcore",
+        "Rock & Grunge",
+        "Hip-Hop",
+        "Miscellaneous",
+        "Electronic",
+    ]:
+        if genre in destinations:
+            presets.append(destinations[genre])
+
+    # Add additional paths from music section
+    music = config.get("music", {})
+    for key in ["nicotine", "nicotine_dir", "deemix", "deemix_dir"]:
+        path = music.get(key) or config.get(key)
+        if path and path not in presets:
+            presets.append(path)
+
+    return presets
+
+
+DIRECTORY_PRESETS = get_directory_presets()
 DEFAULT_PRESET_BY_SCRIPT = {
     "metadata_update_genres_lastfm.py": 8,
     "metadata_update_genres_discogs.py": 8,
@@ -224,14 +302,20 @@ LAUNCHERS = {
     },
 }
 
+
 def show_menu():
     """Display the main menu."""
-    table = Table(title="Music Library Management Tools", show_header=True, header_style="bold magenta")
+    table = Table(
+        title="Music Library Management Tools",
+        show_header=True,
+        header_style="bold magenta",
+    )
     table.add_column("ID", style="cyan", width=7)
+
     table.add_column("Tool", style="green", width=36)
     table.add_column("Category", style="magenta", width=18)
     table.add_column("Description", style="white", width=46)
-    
+
     for key, tool in sorted(TOOLS.items(), key=lambda x: int(x[0])):
         table.add_row(key, tool["label"], tool["category"], tool["description"])
 
@@ -287,10 +371,14 @@ def get_music_directory(script_info):
     default_index = get_default_preset_index(script_info)
     console.print("\n[bold cyan]Choose a base directory:[/bold cyan]")
     show_directory_presets(default_index)
-    selection = Prompt.ask(
-        "Base path",
-        default=str(default_index),
-    ).strip().lower()
+    selection = (
+        Prompt.ask(
+            "Base path",
+            default=str(default_index),
+        )
+        .strip()
+        .lower()
+    )
 
     if selection == "c":
         base_path = Prompt.ask("Custom absolute path", default="")
@@ -301,6 +389,7 @@ def get_music_directory(script_info):
         base_path = DIRECTORY_PRESETS[int(selection) - 1]
     else:
         console.print(f"[red]Error: Invalid base path selection: {selection}[/red]")
+
         return None
 
     relative_suffix = Prompt.ask("Relative subpath (optional)", default="").strip()
@@ -312,16 +401,17 @@ def get_music_directory(script_info):
 
     return directory
 
+
 def build_command(script_info, directory, dry_run=True, extra_args=None):
     """Build the command to run a script."""
     script_path = SCRIPTS_DIR / script_info["script"]
-    
+
     if not script_path.exists():
         console.print(f"[red]Error: Script not found: {script_path}[/red]")
         return None
-    
+
     cmd = [sys.executable, str(script_path)]
-    
+
     # Add directory argument
     if script_info["arg_pattern"] == "-d":
         cmd.extend(["-d", directory])
@@ -329,15 +419,15 @@ def build_command(script_info, directory, dry_run=True, extra_args=None):
         cmd.extend(["--archive", directory])
     elif script_info["arg_pattern"] == "path":
         cmd.append(directory)
-    
+
     # Add dry-run if requested
     if dry_run and script_info.get("supports_dry_run", True):
         cmd.append("--dry-run")
-    
+
     # Add extra arguments
     if extra_args:
         cmd.extend(extra_args)
-    
+
     return cmd
 
 
@@ -347,9 +437,13 @@ def execute_command(cmd, label):
     try:
         result = subprocess.run(cmd, check=False)
         if result.returncode == 0:
-            console.print(f"\n[bold green]✓ {label} completed successfully[/bold green]")
+            console.print(
+                f"\n[bold green]✓ {label} completed successfully[/bold green]"
+            )
         else:
-            console.print(f"\n[bold red]✗ {label} exited with code {result.returncode}[/bold red]")
+            console.print(
+                f"\n[bold red]✗ {label} exited with code {result.returncode}[/bold red]"
+            )
         return result.returncode
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/yellow]")
@@ -400,23 +494,24 @@ def run_launcher(selection):
     cmd = build_launcher_command(launcher_info)
     return execute_command(cmd, launcher_info["label"])
 
+
 def run_script(script_key):
     """Run a selected script."""
     if script_key not in TOOLS:
         console.print(f"[red]Invalid selection: {script_key}[/red]")
         return
-    
+
     script_info = TOOLS[script_key]
     script_name = script_info["script"]
-    
+
     console.print(f"\n[bold green]Selected: {script_info['label']}[/bold green]")
     console.print(f"[dim]{script_info['description']}[/dim]\n")
-    
+
     # Get music directory
     directory = get_music_directory(script_info)
     if not directory:
         return
-    
+
     # Ask for dry-run
     dry_run = False
     if script_info.get("supports_dry_run", True):
@@ -424,24 +519,26 @@ def run_script(script_key):
             dry_run = False
         else:
             dry_run = Confirm.ask("Run in dry-run mode?", default=True)
-    
+
     # Build extra arguments based on script
     extra_args = []
-    
+
     if script_name in {"archive_lossy_duplicates.py", "archive_mp3_duplicates.py"}:
         format_choice = Prompt.ask(
             "Archive format",
             choices=["7z", "zip", "tar.gz", "tar.xz", "tar.bz2", "gzip", "bzip2", "xz"],
-            default="tar.xz"
+            default="tar.xz",
         )
         extra_args.extend(["--format", format_choice])
-        
+
         keep_originals = Confirm.ask("Keep original files?", default=False)
         if keep_originals:
             extra_args.append("--keep")
-    
+
     if script_name == "lyrics_embed_from_lrc.py":
-        force = Confirm.ask("Force re-embedding (even if already embedded)?", default=False)
+        force = Confirm.ask(
+            "Force re-embedding (even if already embedded)?", default=False
+        )
         if force:
             extra_args.append("--force")
         verbose = Confirm.ask("Verbose output?", default=True)
@@ -486,12 +583,16 @@ def run_script(script_key):
             extra_args.append("--prompt-open-in-lyrics-finder")
 
     if script_name == "folder_remove_cover_only.py":
-        delete_covers = Confirm.ask("Delete cover images before removing folders?", default=False)
+        delete_covers = Confirm.ask(
+            "Delete cover images before removing folders?", default=False
+        )
         if delete_covers:
             extra_args.append("--delete-covers")
 
     if script_name == "track_validate_numbering.py":
-        strict = Confirm.ask("Use strict mode (flag albums not starting at 01)?", default=False)
+        strict = Confirm.ask(
+            "Use strict mode (flag albums not starting at 01)?", default=False
+        )
         if strict:
             extra_args.append("--strict")
 
@@ -499,7 +600,9 @@ def run_script(script_key):
         process_all = Confirm.ask("Process all bands under this path?", default=False)
         if process_all:
             extra_args = ["--all", "--path", directory]
-        force = Confirm.ask("Force re-download even if images already exist?", default=False)
+        force = Confirm.ask(
+            "Force re-download even if images already exist?", default=False
+        )
         if force:
             extra_args.append("--force")
 
@@ -507,7 +610,9 @@ def run_script(script_key):
         band = Prompt.ask("Band or artist name")
         album = Prompt.ask("Known album for artist matching")
         extra_args.extend(["--band", band, "--album", album])
-        include_singles = Confirm.ask("Include singles in the discography scan?", default=False)
+        include_singles = Confirm.ask(
+            "Include singles in the discography scan?", default=False
+        )
         if include_singles:
             extra_args.append("--include-singles")
         output_path = Prompt.ask(
@@ -522,37 +627,42 @@ def run_script(script_key):
         )
         if download_missing:
             extra_args.append("--download-with-deemon")
-    
+
     # Build and show command
     cmd = build_command(script_info, directory, dry_run, extra_args)
     if not cmd:
         return
-    
+
     console.print(f"\n[bold yellow]Command:[/bold yellow] {' '.join(cmd)}\n")
-    
+
     # Confirm execution
     if not Confirm.ask("Execute this command?", default=True):
         console.print("[yellow]Cancelled[/yellow]")
         return
-    
+
     result_code = execute_command(cmd, script_info["label"])
     if result_code == 0 and dry_run:
         maybe_run_for_real_after_dry_run(cmd, script_info["label"], should_prompt=True)
 
+
 def main():
     """Main menu loop."""
-    console.print(Panel.fit(
-        "[bold cyan]Music Library Management Tools[/bold cyan]\n"
-        "[dim]Grouped tools for music library maintenance[/dim]",
-        border_style="cyan"
-    ))
-    
+    console.print(
+        Panel.fit(
+            "[bold cyan]Music Library Management Tools[/bold cyan]\n"
+            "[dim]Grouped tools for music library maintenance[/dim]",
+            border_style="cyan",
+        )
+    )
+
     while True:
         show_menu()
-        
-        console.print("[dim]Enter a tool number, launcher key, 'q' to quit, or 'l' to view legacy tools[/dim]")
+        console.print(
+            "[dim]Enter a tool number, launcher key, 'q' to quit, or 'l' to view legacy tools[/dim]"
+        )
+
         choice = Prompt.ask("\nSelection", default="q").strip().lower()
-        
+
         if choice == "q":
             console.print("\n[yellow]Goodbye![/yellow]")
             break
@@ -560,7 +670,9 @@ def main():
             console.print("\n[bold yellow]Legacy / One-Off Tools:[/bold yellow]")
             for label, script_path in LEGACY_TOOLS:
                 console.print(f"  • {label} - {script_path}")
-            console.print("\n[dim]These are intentionally kept out of the primary menu and can be run directly if needed.[/dim]\n")
+            console.print(
+                "\n[dim]These are intentionally kept out of the primary menu and can be run directly if needed.[/dim]\n"
+            )
         elif choice in TOOLS:
             run_script(choice)
             if not Confirm.ask("\nRun another script?", default=True):
@@ -571,6 +683,7 @@ def main():
                 break
         else:
             console.print(f"[red]Invalid selection: {choice}[/red]\n")
+
 
 if __name__ == "__main__":
     try:

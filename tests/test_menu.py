@@ -95,6 +95,7 @@ class MenuTests(unittest.TestCase):
             "Deemon",
         )
 
+
     def test_maybe_run_for_real_after_dry_run_reruns_without_dry_run(self):
         import menu
 

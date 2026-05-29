@@ -10,7 +10,7 @@ Run the interactive menu:
 python3 menu.py
 ```
 
-Or double-click [launch.command](/Users/rd/.config/tools/hoarder-tools/launch.command) in Finder. It resolves the toolkit directory automatically, prefers Ghostty when available, and otherwise runs in the current terminal session.
+Or double-click `launch.command` in Finder. It resolves the toolkit directory automatically, prefers Ghostty when available, and otherwise runs in the current terminal session.
 
 The menu lets you:
 - choose a tool by name

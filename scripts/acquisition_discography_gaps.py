@@ -1,14 +1,29 @@
 #!/usr/bin/env python3
 """
 Find missing releases in an artist discography and optionally send them to deemon.
+
+Purpose: Compare Deezer discography against collection, find missing releases
+Usage: python acquisition_discography_gaps.py -d /path/to/collection --band "Artist" --album "Album"
+Options:
+  --dry-run           Preview missing releases without downloading
+  --verbose           Print detailed output
+  --include-singles   Include singles in results
+  --output FILE       Write missing release URLs to file
+  --download-with-deemon  Queue missing releases via deemon
+Exit codes:
+  0 - Success
+  1 - Error
+Config keys used: external_scripts.collection_matcher, audio.deemix
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import subprocess
+import sys
 import time
 import re
 from pathlib import Path
@@ -17,9 +32,46 @@ import requests
 from rich.console import Console
 from rich.prompt import Prompt
 
+# Add shared config module from ~/.config/tools/
+CONFIG_TOOLS = str(Path.home() / ".config" / "tools")
+if CONFIG_TOOLS not in sys.path:
+    sys.path.insert(0, CONFIG_TOOLS)
+
+try:
+    from config import load_config, get_path, get_deemix_dir
+except ImportError:
+
+    def load_config():
+        return {}
+
+    def get_path(c, k, d=None):
+        return d
+
+    def get_deemix_dir(c):
+        return None
+
 
 console = Console()
-COLLECTION_MATCHER_PATH = Path("/Users/rd/Scripts/Riley/DeemixKit/scripts/rileys-collection-matcher.py")
+
+# Load config
+_CONFIG = load_config()
+
+
+def get_collection_matcher_path() -> Path:
+    """Get external collection matcher script path from config or default."""
+    script_path = get_path(_CONFIG, "external_scripts.collection_matcher")
+    if script_path:
+        return Path(script_path)
+    return (
+        Path.home()
+        / "Scripts"
+        / "Riley"
+        / "DeemixKit"
+        / "scripts"
+        / "rileys-collection-matcher.py"
+    )
+
+
 DEEZER_SEARCH_ALBUM_URL = "https://api.deezer.com/search/album"
 DEEZER_ARTIST_ALBUMS_URL = "https://api.deezer.com/artist/{artist_id}/albums"
 DEEZER_ALBUM_BASE = "https://www.deezer.com/album/"
@@ -34,11 +86,14 @@ def resolve_matcher_collection_path(collection_path: Path) -> Path:
 
 
 def load_collection_matcher():
-    if not COLLECTION_MATCHER_PATH.exists():
-        raise FileNotFoundError(f"Collection matcher not found: {COLLECTION_MATCHER_PATH}")
-    spec = importlib.util.spec_from_file_location("riley_collection_matcher", COLLECTION_MATCHER_PATH)
+    matcher_path = get_collection_matcher_path()
+    if not matcher_path.exists():
+        raise FileNotFoundError(f"Collection matcher not found: {matcher_path}")
+    spec = importlib.util.spec_from_file_location(
+        "riley_collection_matcher", matcher_path
+    )
     if spec is None or spec.loader is None:
-        raise ImportError(f"Could not load collection matcher: {COLLECTION_MATCHER_PATH}")
+        raise ImportError(f"Could not load collection matcher: {matcher_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.CollectionMatcher
@@ -51,7 +106,11 @@ def create_session() -> requests.Session:
 
 
 def search_reference_album(session: requests.Session, band: str, album: str) -> dict:
-    response = session.get(DEEZER_SEARCH_ALBUM_URL, params={"q": f"{band} {album}", "limit": 20}, timeout=10)
+    response = session.get(
+        DEEZER_SEARCH_ALBUM_URL,
+        params={"q": f"{band} {album}", "limit": 20},
+        timeout=10,
+    )
     response.raise_for_status()
     data = response.json()
     albums = data.get("data") or []
@@ -78,7 +137,11 @@ def filter_discography(albums: list[dict], include_singles: bool = False) -> lis
     if include_singles:
         filtered = albums
     else:
-        filtered = [album for album in albums if (album.get("record_type") or "").lower() in {"album", "ep"}]
+        filtered = [
+            album
+            for album in albums
+            if (album.get("record_type") or "").lower() in {"album", "ep"}
+        ]
 
     seen_titles = set()
     unique = []
@@ -109,11 +172,15 @@ def build_release_entries(albums: list[dict], artist_name: str) -> list[dict]:
     return entries
 
 
-def split_missing_releases(releases: list[dict], matcher) -> tuple[list[dict], list[dict]]:
+def split_missing_releases(
+    releases: list[dict], matcher
+) -> tuple[list[dict], list[dict]]:
     missing = []
     existing = []
     for release in releases:
-        if matcher.is_album_in_collection(release["artist"], release["album"], release["year"]):
+        if matcher.is_album_in_collection(
+            release["artist"], release["album"], release["year"]
+        ):
             existing.append(release)
         else:
             missing.append(release)
@@ -147,14 +214,18 @@ def download_with_deemon(releases: list[dict]) -> int:
     return subprocess.run(command, check=False).returncode
 
 
-def print_release_list(title: str, releases: list[dict], numbered: bool = False) -> None:
+def print_release_list(
+    title: str, releases: list[dict], numbered: bool = False
+) -> None:
     if not releases:
         return
     console.print(f"\n[bold]{title}[/bold]")
     for index, release in enumerate(releases, 1):
         record_type = release["record_type"] or "unknown"
         prefix = f"{index}. " if numbered else "- "
-        console.print(f"{prefix}{release['artist']} / {release['album']} [{record_type}]")
+        console.print(
+            f"{prefix}{release['artist']} / {release['album']} [{record_type}]"
+        )
 
 
 def parse_release_selection(selection: str, total: int) -> list[int]:
@@ -204,11 +275,15 @@ def prompt_for_release_subset(releases: list[dict]) -> list[dict]:
 
     numbers = parse_release_selection(selection, len(releases))
     if not numbers:
-        console.print("[yellow]No valid release numbers selected. Skipping download.[/yellow]")
+        console.print(
+            "[yellow]No valid release numbers selected. Skipping download.[/yellow]"
+        )
         return []
 
     chosen = select_releases_by_numbers(releases, numbers)
-    console.print(f"Selected {len(chosen)} of {len(releases)} missing releases for download.")
+    console.print(
+        f"Selected {len(chosen)} of {len(releases)} missing releases for download."
+    )
     return chosen
 
 
@@ -250,7 +325,9 @@ def run_workflow(
     console.print(f"Dry run: {'Yes' if dry_run else 'No'}")
 
     if verbose or (download_missing and not dry_run and missing):
-        print_release_list("Missing Releases", missing, numbered=download_missing and not dry_run)
+        print_release_list(
+            "Missing Releases", missing, numbered=download_missing and not dry_run
+        )
     if verbose:
         print_release_list("Existing Releases", existing)
 
@@ -277,13 +354,31 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Compare a Deezer discography against your collection and optionally download missing releases."
     )
-    parser.add_argument("-d", "--directory", required=True, help="Collection root to compare against")
+    parser.add_argument(
+        "-d", "--directory", required=True, help="Collection root to compare against"
+    )
     parser.add_argument("--band", required=True, help="Band or artist name")
-    parser.add_argument("--album", required=True, help="Known album used to identify the correct artist")
-    parser.add_argument("--include-singles", action="store_true", help="Include singles in discography results")
-    parser.add_argument("--dry-run", action="store_true", help="Preview missing releases without downloading")
-    parser.add_argument("--verbose", action="store_true", help="Print missing and existing release lists")
-    parser.add_argument("-o", "--output", help="Optional file to write missing Deezer album URLs")
+    parser.add_argument(
+        "--album", required=True, help="Known album used to identify the correct artist"
+    )
+    parser.add_argument(
+        "--include-singles",
+        action="store_true",
+        help="Include singles in discography results",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview missing releases without downloading",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print missing and existing release lists",
+    )
+    parser.add_argument(
+        "-o", "--output", help="Optional file to write missing Deezer album URLs"
+    )
     parser.add_argument(
         "--download-with-deemon",
         action="store_true",
@@ -309,3 +404,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
