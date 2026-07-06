@@ -54,11 +54,12 @@ _CONFIG = load_config()
 EXTERNAL_SCRIPT_DEFAULT = (
     Path.home()
     / "Scripts"
-    / "Riley"
-    / "Audio"
-    / "Genres"
-    / "Lastfm"
-    / "Genres from Lastfm.js"
+    / "Media"
+    / "Music"
+    / "metadata"
+    / "genres"
+    / "lastfm"
+    / "Genres from Lastfm"
 )
 
 
@@ -117,8 +118,8 @@ def validate_runtime() -> list[str]:
     script_path = get_external_script_path()
     if not script_path.exists():
         problems.append(f"Missing external script: {script_path}")
-    if shutil.which("node") is None:
-        problems.append("`node` is not available in PATH")
+    elif not os.access(str(script_path), os.X_OK):
+        problems.append(f"External script not executable: {script_path}")
     if not get_api_key("LASTFM_API_KEY", _CONFIG):
         problems.append("`LASTFM_API_KEY` is not set (in .env or environment)")
     return problems
@@ -129,7 +130,7 @@ def run_external(directory: Path) -> int:
     api_key = get_api_key("LASTFM_API_KEY", _CONFIG)
     env = os.environ.copy()
     env["LASTFM_API_KEY"] = api_key or ""
-    command = ["node", str(script_path), str(directory)]
+    command = [str(script_path), str(directory)]
     return subprocess.run(command, check=False, env=env).returncode
 
 
